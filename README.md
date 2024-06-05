@@ -25,6 +25,10 @@ The terms are:
 - kornia
 - ptwt
 
+Optional
+
+- nvitop (for providing information on the GPU usage during the optimization)
+
 ## Installation
 
 We recommend to create a new Anaconda environment
