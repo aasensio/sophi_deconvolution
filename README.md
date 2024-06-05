@@ -33,7 +33,7 @@ We recommend to create a new Anaconda environment
 
 And then install the requirements using `pip`:
 
-    pip install numpy tqdm kornia pywt torch
+    pip install numpy tqdm kornia ptwt torch
 
 ## Usage
 
