@@ -39,9 +39,11 @@ class Deconvolution(nn.Module):
             self.cuda = False
         self.device = torch.device(f"cuda:{self.config['gpu']}" if self.cuda else "cpu")        
 
-        if (self.cuda):
+        if (NVITOP):
             self.handle = Device.all()[self.config['gpu']]            
             print(f"Computing in {self.device} : {self.handle.name()} - mem: {self.handle.memory_used_human()}/{self.handle.memory_total_human()}")
+        else:
+            print(f"Computing in {self.device}")
         
         # Generate Hamming window function for WFS correlation
         self.npix_apod = self.config['npix_apodization']
@@ -307,7 +309,7 @@ class Deconvolution(nn.Module):
             self.scaler.update()
                         
             tmp = OrderedDict()
-            if (self.cuda):
+            if (NVITOP):
                 tmp['gpu'] = f'{self.handle.gpu_utilization()}'                
                 tmp['mem'] = f' {self.handle.memory_used_human()}/{self.handle.memory_total_human()}'
             tmp['L_mse'] = f'{loss_mse.item():.8f}'
