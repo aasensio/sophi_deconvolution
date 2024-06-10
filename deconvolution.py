@@ -323,7 +323,15 @@ class Deconvolution(nn.Module):
 
             losses.append(loss.item())
 
-        losses = np.array(losses)        
+        losses = np.array(losses)
+
+        # Final result after the optimization takes place
+        with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=self.use_amp):                
+            # Get the convolved image using the current estimation and the PSF
+            if self.config['checkpointing']:
+                convolved, image_H_ft, grad = torch.utils.checkpoint.checkpoint(self.forward, image, use_reentrant=False)
+            else:                    
+                convolved, image_H_ft, grad = self.forward(image)
 
         # Recover filter image
         image_H = torch.fft.ifft2(image_H_ft).real
