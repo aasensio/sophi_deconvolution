@@ -41,7 +41,7 @@ if (__name__ == '__main__'):
     config = {
         'gpu': 0,
         'npix_apodization': 24,
-        'n_pixel': 512,        
+        'n_pixel': 512,
         'n_iter' : 50,
         'n_iter_regularization': 50,
         'wavelength': 6173.341,
@@ -71,19 +71,19 @@ if (__name__ == '__main__'):
         cmap = cmap
         wavelet = 'db3'
     if (which == 1):
-        lambda_wavelet = 0.004
+        lambda_wavelet = 0.004**2
         ranges = [-0.01, 0.01]
         wavel = 3
         cmap = 'seismic'
         wavelet = 'db3'
     if (which == 2):
-        lambda_wavelet = 0.004
+        lambda_wavelet = 0.004**2
         ranges = [-0.01, 0.01]
         wavel = 3
         cmap = 'seismic'
         wavelet = 'db3'
     if (which == 3):
-        lambda_wavelet = 0.004
+        lambda_wavelet = 0.004**2
         ranges = [-0.05, 0.05]
         wavel = 3
         cmap = 'seismic'
@@ -96,7 +96,7 @@ if (__name__ == '__main__'):
     print('#######################')    
     frames = stokes[:, which:which+1, :, :]
     
-    config['n_pixel'] = nx + 2*pad_width
+    config['n_pixel'] = nx + pad_width
 
     # Instantiate the model
     deconvolver = Deconvolution(config)
@@ -105,7 +105,7 @@ if (__name__ == '__main__'):
     # It returns the deconvolved image, the Fourier filtered image and the loss
     rec, rec_H, loss = deconvolver.deconvolve(frames,                                                 
                                                 regularize_fourier='mask', 
-                                                diffraction_limit=0.90,
+                                                diffraction_limit=0.60,
                                                 lambda_grad=lambda_grad, 
                                                 lambda_obj=lambda_obj,
                                                 lambda_spectral=lambda_spectral,
@@ -128,44 +128,50 @@ if (__name__ == '__main__'):
     
     
 
-    fig, ax = pl.subplots(nrows=3, ncols=4, figsize=(20, 15))
+    # fig, ax = pl.subplots(nrows=3, ncols=4, figsize=(20, 15))
     
-    im = ax[0, 0].imshow(restored[0].data[70:180, 1200:, which, wavel], cmap=cmap)
-    pl.colorbar(im, ax=ax[0, 0])
-    ax[0, 0].set_title(label1)
+    # im = ax[0, 0].imshow(restored[0].data[70:180, 1200:, which, wavel], cmap=cmap)
+    # pl.colorbar(im, ax=ax[0, 0])
+    # ax[0, 0].set_title(label1)
 
-    im = ax[0, 1].imshow(rec[3, 0, 70:180, 1200:], cmap=cmap)
-    pl.colorbar(im, ax=ax[0, 1])
-    ax[0, 1].set_title(label2)
+    # im = ax[0, 1].imshow(rec[3, 0, 70:180, 1200:], cmap=cmap)
+    # pl.colorbar(im, ax=ax[0, 1])
+    # ax[0, 1].set_title(label2)
 
-    im = ax[0, 2].imshow(rec_H[3, 0, 70:180, 1200:], cmap=cmap)
-    pl.colorbar(im, ax=ax[0, 2])
-    ax[0, 2].set_title(label3)
+    # im = ax[0, 2].imshow(rec_H[3, 0, 70:180, 1200:], cmap=cmap)
+    # pl.colorbar(im, ax=ax[0, 2])
+    # ax[0, 2].set_title(label3)
 
-    im = ax[0, 3].imshow(stokes[3, which, 70:180, 1200:], cmap=cmap)
-    pl.colorbar(im, ax=ax[0, 3])
-    ax[0, 3].set_title(label4)
+    # im = ax[0, 3].imshow(stokes[3, which, 70:180, 1200:], cmap=cmap)
+    # pl.colorbar(im, ax=ax[0, 3])
+    # ax[0, 3].set_title(label4)
     
-    im = ax[1, 0].imshow(restored[0].data[300:800, 700:1200, which, wavel], cmap=cmap)
-    pl.colorbar(im, ax=ax[1, 0])
+    # im = ax[1, 0].imshow(restored[0].data[300:800, 700:1200, which, wavel], cmap=cmap)
+    # pl.colorbar(im, ax=ax[1, 0])
     
-    im = ax[1, 1].imshow(rec[wavel, 0, 300:800, 700:1200], cmap=cmap)
-    pl.colorbar(im, ax=ax[1, 1])
+    # im = ax[1, 1].imshow(rec[wavel, 0, 300:800, 700:1200], cmap=cmap)
+    # pl.colorbar(im, ax=ax[1, 1])
     
-    im = ax[1, 2].imshow(rec_H[wavel, 0, 300:800, 700:1200], cmap=cmap)
-    pl.colorbar(im, ax=ax[1, 2])
+    # im = ax[1, 2].imshow(rec_H[wavel, 0, 300:800, 700:1200], cmap=cmap)
+    # pl.colorbar(im, ax=ax[1, 2])
 
-    im = ax[1, 3].imshow(stokes[wavel, which, 300:800, 700:1200], cmap=cmap)
-    pl.colorbar(im, ax=ax[1, 3])
+    # im = ax[1, 3].imshow(stokes[wavel, which, 300:800, 700:1200], cmap=cmap)
+    # pl.colorbar(im, ax=ax[1, 3])
 
-    im = ax[2, 0].imshow(restored[0].data[:, :, which, wavel], cmap=cmap)
-    pl.colorbar(im, ax=ax[2, 0])
+    # im = ax[2, 0].imshow(restored[0].data[:, :, which, wavel], cmap=cmap)
+    # pl.colorbar(im, ax=ax[2, 0])
     
-    im = ax[2, 1].imshow(rec[wavel, 0, :, :], cmap=cmap)
-    pl.colorbar(im, ax=ax[2, 1])
+    # im = ax[2, 1].imshow(rec[wavel, 0, :, :], cmap=cmap)
+    # pl.colorbar(im, ax=ax[2, 1])
     
-    im = ax[2, 2].imshow(rec_H[wavel, 0, :, :], cmap=cmap)
-    pl.colorbar(im, ax=ax[2, 2])
+    # im = ax[2, 2].imshow(rec_H[wavel, 0, :, :], cmap=cmap)
+    # pl.colorbar(im, ax=ax[2, 2])
 
-    im = ax[2, 3].imshow(stokes[wavel, which, :, :], cmap=cmap)
-    pl.colorbar(im, ax=ax[2, 3])
+    # im = ax[2, 3].imshow(stokes[wavel, which, :, :], cmap=cmap)
+    # pl.colorbar(im, ax=ax[2, 3])
+
+    import az_average
+    k, power = az_average.power_spectrum(rec[3, 0, :, :])
+    k, power_H = az_average.power_spectrum(rec_H[3, 0, :, :])
+    pl.semilogy(k, power)
+    pl.semilogy(k, power_H)

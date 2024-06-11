@@ -113,6 +113,10 @@ class Deconvolution(nn.Module):
 
         # Define the scaler for the automatic mixed precision
         self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
+
+        # Adding modulation matrix?
+        if 'modulation_matrix' in self.config:
+            self.modulation_matrix = torch.tensor(self.config['modulation_matrix'].astype('float32')).to(self.device)
                      
     def compute_psfs(self, modes):
         """Compute the PSFs and their Fourier transform from a set of modes
@@ -186,13 +190,14 @@ class Deconvolution(nn.Module):
         return convolved, image_H_ft, grad
     
     def wavelet_loss(self, image, lambda_wavelet, wavelet='db5'):
-        coefs = ptwt.wavedec2(image, pywt.Wavelet(wavelet), level=4, mode="reflect")
-        
-        nlev = len(coefs)
-        loss = 0.0
-        for i in range(nlev-1):
-            for j in range(3):
-                loss += lambda_wavelet * torch.mean(torch.abs(coefs[i+1][j]))
+        for mod in range(4):
+            coefs = ptwt.wavedec2(image[:, mod, ...], pywt.Wavelet(wavelet[mod]), level=4, mode="reflect")
+            
+            nlev = len(coefs)
+            loss = 0.0
+            for i in range(nlev-1):
+                for j in range(3):
+                    loss += lambda_wavelet[mod] * torch.mean(torch.abs(coefs[i+1][j]))
 
         return loss
 
@@ -225,7 +230,8 @@ class Deconvolution(nn.Module):
                         
         # Pad the images and move arrays to tensors
         obs_pad = np.pad(frames, pad_width=((0, 0), (0, 0), (self.pad_width // 2, self.pad_width // 2), (self.pad_width // 2, self.pad_width // 2)), mode='symmetric')        
-        obs = torch.tensor(obs_pad.astype('float32')).to(self.device)
+        obs = torch.tensor(obs_pad.astype('float32')).to(self.device)        
+        obs_mod = torch.einsum('ijkl,mj->imkl', obs, self.modulation_matrix)
         
         # Fourier mask
         mask = self.rho <= diffraction_limit
@@ -260,40 +266,43 @@ class Deconvolution(nn.Module):
                     convolved, image_H_ft, grad = self.forward(image)
 
                 # Regularization for the spatial gradient and the object
-                if (lambda_grad > 0.0):
-                    regul_grad = lambda_grad * torch.mean(grad**2)
+                if (torch.max(lambda_grad) > 0.0):
+                    regul_grad = torch.mean(lambda_grad[None, :, None, None, None] * grad**2)
                 else:
                     regul_grad = torch.tensor(0.0).to(self.device)
 
                 # Regularization for the object to force it to be zero
-                if (lambda_obj > 0.0):
-                    regul_obj = lambda_obj * torch.mean(image**2)
+                if (torch.max(lambda_obj) > 0.0):
+                    regul_obj = torch.mean(lambda_obj[None, :, None, None] * image**2)
                 else:
                     regul_obj = torch.tensor(0.0).to(self.device)
 
                 # Regularization forcing spectral smoothness
-                if (lambda_spectral > 0.0):                
+                if (torch.max(lambda_spectral) > 0.0):                
                     grad_spectra = image[1:, ...] - image[:-1, ...]
-                    regul_spectra = lambda_spectral * torch.mean(grad_spectra**2)
+                    regul_spectra = torch.mean(lambda_spectral[None, :, None, None] * grad_spectra**2)
                 else:
                     regul_spectra = torch.tensor(0.0).to(self.device)
 
                 # Regularization forcing continuum to zero (continuum is last wavelength point)
-                if (lambda_continuum > 0.0):
-                    regul_continuum = lambda_continuum * torch.mean(image[-1, ...]**2)
+                if (torch.max(lambda_continuum) > 0.0):
+                    regul_continuum = torch.mean(lambda_continuum[:, None, None] * image[-1, ...]**2)
                 else:
                     regul_continuum = torch.tensor(0.0).to(self.device)
 
-                if (lambda_wavelet > 0.0):
-                    regul_wavelet = lambda_wavelet * self.wavelet_loss(image, lambda_wavelet, wavelet=wavelet)
+                if (torch.max(lambda_wavelet) > 0.0):
+                    regul_wavelet = self.wavelet_loss(image, lambda_wavelet, wavelet=wavelet)
                 else:
                     regul_wavelet = torch.tensor(0.0).to(self.device)
                 
                 # Compute the likelihood
                 loss_mse = torch.mean( (obs - convolved)**2)
 
+                convolved_mod = torch.einsum('ijkl,mj->imkl', convolved, self.modulation_matrix)
+                loss_mse_mod = torch.mean( (obs_mod - convolved_mod)**2)
+
                 # Add likelihood and regularization
-                loss = loss_mse + regul_grad + regul_obj + regul_spectra + regul_continuum + regul_wavelet
+                loss = loss_mse + loss_mse_mod + regul_grad + regul_obj + regul_spectra + regul_continuum + regul_wavelet
 
                 if loop > self.n_iter_regularization:
                     lambda_grad = 0.0
@@ -313,6 +322,7 @@ class Deconvolution(nn.Module):
                 tmp['gpu'] = f'{self.handle.gpu_utilization()}'                
                 tmp['mem'] = f' {self.handle.memory_used_human()}/{self.handle.memory_total_human()}'
             tmp['L_mse'] = f'{loss_mse.item():.8f}'
+            tmp['L_mse_m'] = f'{loss_mse_mod.item():.8f}'
             tmp['R_grad'] = f'{regul_grad.item():.8f}'
             tmp['R_obj'] = f'{regul_obj.item():.8f}'
             tmp['R_spec'] = f'{regul_spectra.item():.8f}'
@@ -341,7 +351,7 @@ class Deconvolution(nn.Module):
         image = image.detach().cpu().numpy()
 
         # Crop the padded region
-        image = image[:, :, self.pad_width:-self.pad_width, self.pad_width:-self.pad_width]
-        image_H = image_H[:, :, self.pad_width:-self.pad_width, self.pad_width:-self.pad_width]
+        image = image[:, :, self.pad_width // 2:-self.pad_width // 2, self.pad_width // 2:-self.pad_width // 2]
+        image_H = image_H[:, :, self.pad_width // 2:-self.pad_width // 2, self.pad_width // 2:-self.pad_width // 2]
 
         return image, image_H, losses
