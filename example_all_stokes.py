@@ -34,7 +34,7 @@ if __name__ == '__main__':
     nl, ns, nx, ny = stokes.shape
 
     # Pad width
-    pad_width = int(nx*10/(100-10*2))
+    pad_width = 24 #int(nx*10/(100-10*2))
     
     # General configuration
     config = {
@@ -64,25 +64,25 @@ if __name__ == '__main__':
     for which in range(4):
         
         if (which == 0):
-            lambda_wavelet = 0.00
+            lambda_wavelet = 0.00**2
             ranges = [0.0, 1.0]  
             wavel = 0 
             cmap = 'viridis'
             wavelet = 'db3'
         if (which == 1):
-            lambda_wavelet = 0.004
+            lambda_wavelet = 0.004**2
             ranges = [-0.01, 0.01]
             wavel = 3
             cmap = 'seismic'
             wavelet = 'db3'
         if (which == 2):
-            lambda_wavelet = 0.004
+            lambda_wavelet = 0.004**2
             ranges = [-0.01, 0.01]
             wavel = 3
             cmap = 'seismic'
             wavelet = 'db3'
         if (which == 3):
-            lambda_wavelet = 0.004
+            lambda_wavelet = 0.004**2
             ranges = [-0.05, 0.05]
             wavel = 3
             cmap = 'seismic'
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         # Pad the image            
         frames = stokes[:, which:which+1, :, :]
         
-        config['n_pixel'] = nx + 2*pad_width
+        config['n_pixel'] = nx + pad_width
 
         # Instantiate the model
         deconvolver = Deconvolution(config)

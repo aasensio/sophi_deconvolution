@@ -105,7 +105,7 @@ if (__name__ == '__main__'):
     # It returns the deconvolved image, the Fourier filtered image and the loss
     rec, rec_H, loss = deconvolver.deconvolve(frames,                                                 
                                                 regularize_fourier='mask', 
-                                                diffraction_limit=0.60,
+                                                diffraction_limit=0.90,
                                                 lambda_grad=lambda_grad, 
                                                 lambda_obj=lambda_obj,
                                                 lambda_spectral=lambda_spectral,

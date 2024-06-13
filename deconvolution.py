@@ -185,14 +185,14 @@ class Deconvolution(nn.Module):
 
         return convolved, image_H_ft, grad
     
-    def wavelet_loss(self, image, lambda_wavelet, wavelet='db5'):
+    def wavelet_loss(self, image, wavelet='db5'):
         coefs = ptwt.wavedec2(image, pywt.Wavelet(wavelet), level=4, mode="reflect")
         
         nlev = len(coefs)
         loss = 0.0
         for i in range(nlev-1):
             for j in range(3):
-                loss += lambda_wavelet * torch.mean(torch.abs(coefs[i+1][j]))
+                loss += torch.mean(torch.abs(coefs[i+1][j]))
 
         return loss
 
@@ -285,7 +285,7 @@ class Deconvolution(nn.Module):
                     regul_continuum = torch.tensor(0.0).to(self.device)
 
                 if (lambda_wavelet > 0.0):
-                    regul_wavelet = lambda_wavelet * self.wavelet_loss(image, lambda_wavelet, wavelet=wavelet)
+                    regul_wavelet = lambda_wavelet * self.wavelet_loss(image, wavelet=wavelet)
                 else:
                     regul_wavelet = torch.tensor(0.0).to(self.device)
                 
@@ -341,7 +341,7 @@ class Deconvolution(nn.Module):
         image = image.detach().cpu().numpy()
 
         # Crop the padded region
-        image = image[:, :, self.pad_width:-self.pad_width, self.pad_width:-self.pad_width]
-        image_H = image_H[:, :, self.pad_width:-self.pad_width, self.pad_width:-self.pad_width]
+        image = image[:, :, self.pad_width // 2:-self.pad_width // 2, self.pad_width // 2:-self.pad_width // 2]
+        image_H = image_H[:, :, self.pad_width // 2:-self.pad_width // 2, self.pad_width // 2:-self.pad_width // 2]
 
         return image, image_H, losses
