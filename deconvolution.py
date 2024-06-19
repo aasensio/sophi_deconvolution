@@ -195,6 +195,31 @@ class Deconvolution(nn.Module):
                 loss += torch.mean(torch.abs(coefs[i+1][j]))
 
         return loss
+    
+    def threshold_wavelet(self, image, thr, wavelet='db5'):
+        coefs = ptwt.wavedec2(image, pywt.Wavelet(wavelet), level=4, mode="reflect")
+        
+        nlev = len(coefs)
+        
+        for i in range(nlev-1):
+            for j in range(3):
+                coefs[i+1][j][torch.abs(coefs[i+1][j]) < thr] = 0.0
+
+        image_out = ptwt.waverec2(coefs, pywt.Wavelet(wavelet))
+
+        return image_out
+    
+    def hard_threshold(self, image, image_H, threshold):
+    # Final wavelet hard thresholding
+        image = torch.tensor(image).to(self.device)
+        image_H = torch.tensor(image_H).to(self.device)
+
+        if (threshold > 0.0):
+            with torch.no_grad():
+                image_H = self.threshold_wavelet(image_H, threshold, wavelet=self.wavelet)
+                image = self.threshold_wavelet(image, threshold, wavelet=self.wavelet)
+
+        return image.cpu().numpy(), image_H.cpu().numpy()
 
     
     def deconvolve(self, 
@@ -229,6 +254,7 @@ class Deconvolution(nn.Module):
         
         # Fourier mask
         mask = self.rho <= diffraction_limit
+        self.wavelet = wavelet
         self.mask = torch.tensor(mask.astype('float32')).to(self.device)
 
         lambda_grad = torch.tensor(lambda_grad).to(self.device)
@@ -285,7 +311,7 @@ class Deconvolution(nn.Module):
                     regul_continuum = torch.tensor(0.0).to(self.device)
 
                 if (lambda_wavelet > 0.0):
-                    regul_wavelet = lambda_wavelet * self.wavelet_loss(image, wavelet=wavelet)
+                    regul_wavelet = lambda_wavelet * self.wavelet_loss(image, wavelet=self.wavelet)
                 else:
                     regul_wavelet = torch.tensor(0.0).to(self.device)
                 
@@ -335,10 +361,10 @@ class Deconvolution(nn.Module):
 
         # Recover filter image
         image_H = torch.fft.ifft2(image_H_ft).real
-        image_H = image_H.detach().cpu().numpy()
-
+        
         # Return the unfiltered image    
         image = image.detach().cpu().numpy()
+        image_H = image_H.detach().cpu().numpy()
 
         # Crop the padded region
         image = image[:, :, self.pad_width // 2:-self.pad_width // 2, self.pad_width // 2:-self.pad_width // 2]

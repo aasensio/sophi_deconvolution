@@ -112,7 +112,7 @@ if (__name__ == '__main__'):
                                                 lambda_continuum=lambda_continuum,
                                                 lambda_wavelet=lambda_wavelet,
                                                 wavelet=wavelet)
-    
+            
     restored = fits.open('restored_reg_0.1_solo_L2_phi-hrt-stokes_20230407T032009_VnoPSF_0344070601.fits')
 
     if (which == 0):
@@ -126,6 +126,18 @@ if (__name__ == '__main__'):
         label3 = f'{np.std(rec_H[3, 0, 70:180, 1200:]):.4f}'
         label4 = f'{np.std(stokes[3, which, 70:180, 1200:]):.4f}'
     
+    fig, ax = pl.subplots(nrows=2, ncols=2, figsize=(10, 10))
+    ax[0, 0].imshow(rec_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+
+    # Do wavelet hard thresholding
+    tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=5e-3)
+    ax[0, 1].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+
+    tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=7e-3)
+    ax[1, 0].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+
+    tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=1e-2)
+    ax[1, 1].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
     
 
     # fig, ax = pl.subplots(nrows=3, ncols=4, figsize=(20, 15))
@@ -170,8 +182,8 @@ if (__name__ == '__main__'):
     # im = ax[2, 3].imshow(stokes[wavel, which, :, :], cmap=cmap)
     # pl.colorbar(im, ax=ax[2, 3])
 
-    import az_average
-    k, power = az_average.power_spectrum(rec[3, 0, :, :])
-    k, power_H = az_average.power_spectrum(rec_H[3, 0, :, :])
-    pl.semilogy(k, power)
-    pl.semilogy(k, power_H)
+    # import az_average
+    # k, power = az_average.power_spectrum(rec[3, 0, :, :])
+    # k, power_H = az_average.power_spectrum(rec_H[3, 0, :, :])
+    # pl.semilogy(k, power)
+    # pl.semilogy(k, power_H)

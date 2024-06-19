@@ -39,7 +39,7 @@ And then install the requirements using `pip`:
 
     pip install numpy tqdm kornia ptwt torch
 
-## Usage
+## Deconvoloution
 
 The main deconvolution code is defined in `deconvolution.py`. The main calling scheme is the following:
 
@@ -105,3 +105,12 @@ The output of the function are:
 - `rec`: recovered image with the same dimensions as the input
 - `recH`: recovered image after the Fourier filtering
 - `loss`: value of the merit function vs iteration
+
+## Thresholding
+
+A final wavelet threshold can help reduce the noise in the weakest magnetized regions. For this purpose,
+you can use the following function:
+
+    rec, rec_H = deconvolver.hard_threshold(rec, rec_H, threshold=1e-2)
+
+where all detail wavelet coefficients smaller in absolute value than `threshold` will be put to zero.
