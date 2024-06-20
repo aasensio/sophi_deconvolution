@@ -128,16 +128,20 @@ if (__name__ == '__main__'):
     
     fig, ax = pl.subplots(nrows=2, ncols=2, figsize=(10, 10))
     ax[0, 0].imshow(rec_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+    ax[0, 0].set_title('No threshold')
 
     # Do wavelet hard thresholding
     tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=5e-3)
     ax[0, 1].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+    ax[0, 1].set_title('Threshold = 5e-3')
 
     tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=7e-3)
     ax[1, 0].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+    ax[1, 0].set_title('Threshold = 7e-3')
 
     tmp, tmp_H = deconvolver.hard_threshold(rec, rec_H, threshold=1e-2)
     ax[1, 1].imshow(tmp_H[3, 0, 400:800, 600:1000], cmap='seismic')#, vmin=-0.01, vmax=0.01)
+    ax[1, 1].set_title('Threshold = 1e-2')
     
 
     # fig, ax = pl.subplots(nrows=3, ncols=4, figsize=(20, 15))
